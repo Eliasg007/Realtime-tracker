@@ -1,14 +1,13 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Real-time Location Tracker</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Real-Time Location Tracker</title>
+  <!-- Use Leaflet for OpenStreetMap -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  <link rel="stylesheet" href="style.css" />
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      text-align: center;
-      background: #f4f4f4;
-    }
     #map {
       height: 500px;
       width: 90%;
@@ -33,45 +32,88 @@
 </head>
 <body>
 
-<h1>Real-time Location Tracker</h1>
-<button onclick="startTracking()">Start Tracking</button>
+<h1>Real-Time Location Tracker</h1>
+<!-- Accessibility: distinct start/stop with ARIA -->
+<button id="startBtn" aria-label="Start real time tracking" onclick="startTracking()">Start Tracking</button>
+<button id="stopBtn" aria-label="Stop real time tracking" onclick="stopTracking()" disabled>Stop Tracking</button>
 <div id="map"></div>
 
+<!-- Use Leaflet for OpenStreetMap -->
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 <script>
-  let map, marker;
+  let map, marker, watchId;
 
   function startTracking() {
     if (navigator.geolocation) {
-      navigator.geolocation.watchPosition(updatePosition, showError, {
+      watchId = navigator.geolocation.watchPosition(updatePosition, showError, {
         enableHighAccuracy: true
       });
+      document.getElementById('startBtn').disabled = true;
+      document.getElementById('stopBtn').disabled = false;
     } else {
       alert("Geolocation is not supported by your browser.");
     }
   }
 
-  function updatePosition(position) {
+  function stopTracking() {
+    if (watchId !== null) {
+      navigator.geolocation.clearWatch(watchId);
+      watchId = null;
+      document.getElementById('startBtn').disabled = false;
+      document.getElementById('stopBtn').disabled = true;
+    }
+  }
+
+  async function updatePosition(position) {
     const lat = position.coords.latitude;
     const lon = position.coords.longitude;
+
+    // Get address using OpenStreetMap Nominatim reverse geocoding
+    const address = await getAddress(lat, lon);
 
     // Initialize the map only once
     if (!map) {
       map = L.map('map').setView([lat, lon], 15);
-
-      // Add OpenStreetMap tiles
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '© OpenStreetMap contributors'
       }).addTo(map);
 
-      // Add marker
       marker = L.marker([lat, lon]).addTo(map)
-        .bindPopup("You are here now")
+        .bindPopup(address)
         .openPopup();
     } else {
-      // Update marker position
       marker.setLatLng([lat, lon]);
+      marker.setPopupContent(address);
       map.setView([lat, lon]);
+    }
+  }
+
+  async function getAddress(lat, lon) {
+    try {
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lon}`
+      );
+      const data = await response.json();
+      // Compose address with house number and street if available
+      let address = "";
+      if (data.address) {
+        if (data.address.house_number) {
+          address += data.address.house_number + " ";
+        }
+        if (data.address.road) {
+          address += data.address.road;
+        }
+        if (address.trim() === "") {
+          address = data.display_name || "Address not found";
+        } else if (data.address.city || data.address.town || data.address.village) {
+          address += ", " + (data.address.city || data.address.town || data.address.village);
+        }
+      } else {
+        address = data.display_name || "Address not found";
+      }
+      return address;
+    } catch (e) {
+      return "Address lookup failed";
     }
   }
 
@@ -92,6 +134,5 @@
     }
   }
 </script>
-
 </body>
 </html>

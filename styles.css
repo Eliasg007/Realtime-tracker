@@ -1,0 +1,151 @@
+/* General page */
+body {
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  text-align: center;
+  background: linear-gradient(135deg, #e3f0ff 0%, #f5f5f5 100%);
+  color: #333;
+  margin: 0;
+  padding: 0;
+  min-height: 100vh;
+  transition: background 0.5s;
+}
+
+/* Title */
+h1 {
+  margin: 32px 0 16px 0;
+  font-size: 2.5rem;
+  color: #1a73e8;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-shadow: 0 2px 8px rgba(26, 115, 232, 0.08);
+  animation: fadeInDown 1s;
+}
+
+/* Map container */
+#map {
+  height: 70vh;
+  width: 90%;
+  max-width: 1000px;
+  margin: 24px auto 32px auto;
+  border-radius: 18px;
+  border: 2px solid #b6d0f7;
+  box-shadow: 0 8px 32px rgba(26, 115, 232, 0.08), 0 2px 8px rgba(0,0,0,0.08);
+  transition: transform 0.3s cubic-bezier(.4,2,.6,1), box-shadow 0.3s;
+  background: #eaf3fb;
+}
+#map:hover {
+  transform: scale(1.015) rotate(-0.3deg);
+  box-shadow: 0 12px 36px rgba(26, 115, 232, 0.16), 0 4px 16px rgba(0,0,0,0.12);
+}
+
+/* Button */
+button {
+  background: linear-gradient(90deg, #1a73e8 60%, #64b5f6 100%);
+  color: white;
+  padding: 14px 36px;
+  margin: 18px;
+  border: none;
+  border-radius: 10px;
+  font-size: 18px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.3s, transform 0.2s, box-shadow 0.2s;
+  box-shadow: 0 4px 16px rgba(26, 115, 232, 0.18);
+  letter-spacing: 0.5px;
+  outline: none;
+  position: relative;
+  overflow: hidden;
+}
+button::after {
+  content: "";
+  position: absolute;
+  left: 50%; top: 50%;
+  width: 0; height: 0;
+  background: rgba(255,255,255,0.2);
+  border-radius: 100%;
+  transform: translate(-50%, -50%);
+  transition: width 0.4s, height 0.4s;
+  z-index: 0;
+}
+button:active::after {
+  width: 200px;
+  height: 200px;
+}
+button:hover {
+  background: linear-gradient(90deg, #1669c1 60%, #42a5f5 100%);
+  transform: translateY(-3px) scale(1.03);
+  box-shadow: 0 8px 24px rgba(26, 115, 232, 0.22);
+}
+button:active {
+  transform: translateY(0) scale(0.98);
+}
+
+/* Popup (address bubble) */
+.leaflet-popup-content-wrapper {
+  background: #ffffff;
+  color: #1a73e8;
+  font-size: 15px;
+  font-weight: 600;
+  border-radius: 12px;
+  box-shadow: 0 6px 18px rgba(26, 115, 232, 0.13);
+  border: 2px solid #90caf9;
+  padding: 2px 0;
+  animation: fadeInUp 0.7s;
+}
+.leaflet-popup-tip {
+  background: #ffffff;
+  border: 2px solid #90caf9;
+}
+.leaflet-popup-content {
+  margin: 10px 16px;
+  line-height: 1.5;
+  letter-spacing: 0.2px;
+}
+
+/* Add a subtle floating animation to the marker */
+.leaflet-marker-icon {
+  animation: floatMarker 2.5s ease-in-out infinite;
+}
+
+/* rotating marker - updated for larger icon, color and arrow tail */
+.rt-divicon { pointer-events: none; }
+.rt-marker { display:flex; align-items:center; justify-content:center; width:56px; height:56px; }
+.rt-marker svg { transition: transform 200ms ease-out; transform-origin: 50% 50%; filter: drop-shadow(0 6px 10px rgba(0,0,0,0.15)); }
+.rt-marker .arrow path { vector-effect: non-scaling-stroke; }
+.rt-marker .arrow-tail { stroke-linecap: round; stroke-linejoin: round; opacity: 0.95; }
+
+/* Animations */
+@keyframes fadeInDown {
+  from { opacity: 0; transform: translateY(-40px);}
+  to { opacity: 1; transform: translateY(0);}
+}
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(40px);}
+  to { opacity: 1; transform: translateY(0);}
+}
+@keyframes floatMarker {
+  0%, 100% { transform: translateY(0);}
+  50% { transform: translateY(-8px);}
+}
+
+/* Mobile responsiveness */
+@media (max-width: 768px) {
+  h1 {
+    font-size: 1.4rem;
+    margin: 18px 0 10px 0;
+  }
+  button {
+    width: 90%;
+    padding: 16px;
+    font-size: 17px;
+  }
+  #map {
+    width: 98%;
+    height: 55vh;
+    border-radius: 10px;
+  }
+  .leaflet-popup-content {
+    font-size: 13px;
+    margin: 8px 8px;
+  }
+}

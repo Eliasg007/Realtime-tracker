@@ -114,6 +114,16 @@ button:active {
 .rt-marker .arrow path { vector-effect: non-scaling-stroke; }
 .rt-marker .arrow-tail { stroke-linecap: round; stroke-linejoin: round; opacity: 0.95; }
 
+/* ensure smooth map rotation and keep controls usable */
+.leaflet-map-pane {
+  transform-origin: 50% 50%;
+  transition: transform 280ms ease-out;
+}
+.leaflet-control-container {
+  transform-origin: 50% 50%;
+  transition: transform 280ms ease-out;
+}
+
 /* Animations */
 @keyframes fadeInDown {
   from { opacity: 0; transform: translateY(-40px);}

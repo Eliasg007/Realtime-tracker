@@ -7,6 +7,10 @@ const GEOCODE_TIME_THROTTLE = 1100; // ms
 let currentHeading = null;
 let deviceOrientationActive = false;
 
+// new globals for rotation
+let MAP_ROTATION_ENABLED = true;
+let currentMapRotation = 0;
+
 function startTracking() {
   if (!navigator.geolocation) {
     alert("Geolocation is not supported by your browser.");
@@ -148,17 +152,29 @@ async function updatePosition(position) {
   if (doGeocode && (now - lastGeocodeTime) > GEOCODE_TIME_THROTTLE) {
     lastGeocodeTime = now;
     lastGeocodePos = { lat, lon };
-    const address = await getAddress(lat, lon);
+
+    // get structured geocode info
+    const geo = await getAddress(lat, lon);
+
+    // build popup html showing precise coords, house number and address
+    const popupHtml = makePopupHtml(lat, lon, accuracy, geo);
+
     // update popup and open
-    marker.bindPopup(address).openPopup();
+    marker.bindPopup(popupHtml, { closeButton: false }).openPopup();
   } else {
     // show quick coords while waiting
-    const short = `${lat.toFixed(5)}, ${lon.toFixed(5)}`;
+    const short = `<div>${lat.toFixed(6)}, ${lon.toFixed(6)}<br><small>${new Date().toLocaleTimeString()}</small></div>`;
     if (!marker.getPopup()) marker.bindPopup(short).openPopup();
     else {
       marker.getPopup().setContent(short);
       marker.openPopup();
     }
+  }
+
+  // after updating marker position/rotation, rotate map if enabled
+  rotateMarkerTo(currentHeading);
+  if (MAP_ROTATION_ENABLED && typeof currentHeading === 'number') {
+    rotateMapTo(currentHeading);
   }
 }
 
@@ -190,55 +206,103 @@ function createRotatingMarker(lat, lon) {
   return m;
 }
 
-// rotate the SVG group inside the marker to the supplied heading (degrees)
+// rotate the visual map so heading faces "up"
+// heading = degrees clockwise from true north (0..360)
+function rotateMapTo(heading) {
+  if (!map || typeof heading !== 'number' || isNaN(heading)) return;
+  const container = map.getContainer();
+  const mapPane = container.querySelector('.leaflet-map-pane');
+  const controls = container.querySelector('.leaflet-control-container');
+
+  const rotation = -heading; // rotate map pane opposite to heading
+  currentMapRotation = rotation;
+
+  if (mapPane) {
+    mapPane.style.transition = 'transform 280ms ease-out';
+    mapPane.style.transformOrigin = '50% 50%';
+    mapPane.style.transform = `rotate(${rotation}deg)`;
+  }
+  // keep controls upright by counter-rotating them
+  if (controls) {
+    controls.style.transition = 'transform 280ms ease-out';
+    controls.style.transformOrigin = '50% 50%';
+    controls.style.transform = `rotate(${heading}deg)`;
+    // ensure control hit areas remain correct
+    controls.style.pointerEvents = 'auto';
+  }
+}
+
+// update rotateMarkerTo to keep arrow oriented correctly when map is rotated
 function rotateMarkerTo(heading) {
-  if (typeof heading !== 'number' || isNaN(heading)) return;
-  const el = marker && marker.getElement();
+  if (!marker) return;
+  const el = marker.getElement();
   if (!el) return;
   const g = el.querySelector('.arrow');
   if (!g) return;
-  // rotate around SVG center (0,0) because viewBox is centered
-  g.setAttribute('transform', `rotate(${heading})`);
+  const headingNum = (typeof heading === 'number' && !isNaN(heading)) ? heading : 0;
+  // marker arrow should be rotated by heading so after the map (which is rotated -heading)
+  // the arrow visually points forward (up) relative to the viewport
+  g.setAttribute('transform', `rotate(${headingNum})`);
 }
 
 // device orientation fallback handler
 function handleDeviceOrientation(ev) {
-  // alpha is rotation around Z axis (compass), may need adjustments depending on device
   if (ev && typeof ev.alpha === 'number') {
-    // alpha: degrees from device coordinate frame; convert to compass heading if available
-    // This is a best-effort fallback; prefer geolocation heading
     const alpha = ev.alpha; // 0..360
-    // Depending on device, alpha may already be compass. Use as heading.
     currentHeading = alpha;
     rotateMarkerTo(currentHeading);
+    if (MAP_ROTATION_ENABLED) rotateMapTo(currentHeading);
   }
 }
 
 async function getAddress(lat, lon) {
   try {
-    // Replace with your email to comply with Nominatim policy
-    const email = encodeURIComponent('replace-with-your-email@example.com');
+    // Replace with your contact email to comply with Nominatim usage policy
+    const email = encodeURIComponent('elijahgegeli@gmail.com');
     const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lon}&addressdetails=1&email=${email}`;
     const response = await fetch(url, { headers: { 'Accept-Language': 'en' } });
-    if (!response.ok) return `${lat.toFixed(5)}, ${lon.toFixed(5)}`;
-    const data = await response.json();
+    if (!response.ok) return { display_name: null };
 
-    let address = '';
-    if (data && data.address) {
-      if (data.address.house_number) address += data.address.house_number + ' ';
-      if (data.address.road) address += data.address.road;
-      if (address.trim() === '') address = data.display_name || '';
-      else {
-        const place = data.address.city || data.address.town || data.address.village || data.address.hamlet;
-        if (place) address += ', ' + place;
-      }
-    } else {
-      address = data.display_name || '';
-    }
-    return address || `${lat.toFixed(5)}, ${lon.toFixed(5)}`;
+    const data = await response.json();
+    const addr = (data && data.address) ? data.address : {};
+
+    return {
+      display_name: data.display_name || '',
+      house_number: addr.house_number || '',
+      road: addr.road || addr.pedestrian || addr.cycleway || addr.footway || '',
+      neighbourhood: addr.neighbourhood || '',
+      suburb: addr.suburb || '',
+      city: addr.city || addr.town || addr.village || '',
+      postcode: addr.postcode || '',
+      raw: data
+    };
   } catch (e) {
-    return `${lat.toFixed(5)}, ${lon.toFixed(5)}`;
+    return { display_name: null };
   }
+}
+
+// helper to build popup HTML with house number and coords
+function makePopupHtml(lat, lon, accuracy, geo) {
+  const coords = `${lat.toFixed(6)}, ${lon.toFixed(6)}`;
+  const ts = new Date().toLocaleString();
+  const housePart = geo && geo.house_number ? `<span style="font-weight:700">${geo.house_number} </span>` : '';
+  const streetPart = geo && geo.road ? `${geo.road}` : '';
+  const placePart = (geo && geo.city) ? `, ${geo.city}` : (geo && geo.suburb) ? `, ${geo.suburb}` : '';
+  const postcode = geo && geo.postcode ? ` ${geo.postcode}` : '';
+  const addressLine = (housePart || streetPart) ? `${housePart}${streetPart}${placePart}${postcode}` : (geo && geo.display_name) ? geo.display_name : '';
+
+  const accuracyHtml = accuracy ? `Accuracy: ${Math.round(accuracy)} m<br>` : '';
+  const osmLink = `<a href="https://www.openstreetmap.org/?mlat=${lat}&mlon=${lon}#map=19/${lat}/${lon}" target="_blank" rel="noopener">Open in OSM</a>`;
+
+  return `
+    <div style="text-align:left; min-width:200px;">
+      <div style="font-size:14px; color:#1a73e8; margin-bottom:6px;"><strong>${addressLine || 'Address not found'}</strong></div>
+      <div style="font-size:13px; color:#333;">Coordinates: <code>${coords}</code></div>
+      <div style="font-size:13px; color:#333;">${accuracyHtml}</div>
+      <div style="font-size:12px; color:#666; margin-top:6px;">${ts}</div>
+      <div style="margin-top:8px;">${osmLink}</div>
+    </div>
+  `;
 }
 
 // Haversine distance (meters)

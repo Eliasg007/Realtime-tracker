@@ -28,6 +28,12 @@
     button:hover {
       background: #45a049;
     }
+    label {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin-left: 8px;
+    }
   </style>
 </head>
 <body>
@@ -36,12 +42,18 @@
 <!-- Accessibility: distinct start/stop with ARIA -->
 <button id="startBtn" aria-label="Start real time tracking" onclick="startTracking()">Start Tracking</button>
 <button id="stopBtn" aria-label="Stop real time tracking" onclick="stopTracking()" disabled>Stop Tracking</button>
+<label>
+  <input id="rotateToggle" type="checkbox" checked onchange="toggleMapRotation(this.checked)" />
+  Rotate map to heading
+</label>
 <div id="map"></div>
 
 <!-- Use Leaflet for OpenStreetMap -->
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 <script>
   let map, marker, watchId;
+  let MAP_ROTATION_ENABLED = true;
+  let currentHeading = 0;
 
   function startTracking() {
     if (navigator.geolocation) {
@@ -67,6 +79,7 @@
   async function updatePosition(position) {
     const lat = position.coords.latitude;
     const lon = position.coords.longitude;
+    currentHeading = position.coords.heading || 0;
 
     // Get address using OpenStreetMap Nominatim reverse geocoding
     const address = await getAddress(lat, lon);
@@ -85,6 +98,22 @@
       marker.setLatLng([lat, lon]);
       marker.setPopupContent(address);
       map.setView([lat, lon]);
+    }
+
+    if (MAP_ROTATION_ENABLED) {
+      rotateMapTo(currentHeading);
+    }
+  }
+
+  function rotateMapTo(heading) {
+    const angle = heading - currentHeading;
+    currentHeading = heading;
+    if (map) {
+      const container = map.getContainer();
+      const mapPane = container.querySelector('.leaflet-map-pane');
+      const controls = container.querySelector('.leaflet-control-container');
+      if (mapPane) mapPane.style.transform = `rotate(${-angle}deg)`;
+      if (controls) controls.style.transform = `rotate(${-angle}deg)`;
     }
   }
 
@@ -131,6 +160,19 @@
       case error.UNKNOWN_ERROR:
         alert("An unknown error occurred.");
         break;
+    }
+  }
+
+  function toggleMapRotation(enabled) {
+    MAP_ROTATION_ENABLED = !!enabled;
+    if (!MAP_ROTATION_ENABLED && map) {
+      const container = map.getContainer();
+      const mapPane = container.querySelector('.leaflet-map-pane');
+      const controls = container.querySelector('.leaflet-control-container');
+      if (mapPane) mapPane.style.transform = 'none';
+      if (controls) controls.style.transform = 'none';
+    } else if (MAP_ROTATION_ENABLED && typeof currentHeading === 'number') {
+      rotateMapTo(currentHeading);
     }
   }
 </script>

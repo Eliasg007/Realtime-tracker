@@ -122,6 +122,12 @@ button:active {
 .leaflet-control-container {
   transform-origin: 50% 50%;
   transition: transform 280ms ease-out;
+  pointer-events: auto; /* keep controls clickable after counter-rotation */
+}
+
+/* make sure popups remain readable */
+.leaflet-popup-pane {
+  pointer-events: auto;
 }
 
 /* Animations */

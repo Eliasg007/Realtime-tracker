@@ -334,3 +334,21 @@ function showError(error) {
       break;
   }
 }
+
+// toggle rotation on/off from UI
+function toggleMapRotation(enabled) {
+  MAP_ROTATION_ENABLED = !!enabled;
+  if (!map) return;
+  const container = map.getContainer();
+  const mapPane = container.querySelector('.leaflet-map-pane');
+  const controls = container.querySelector('.leaflet-control-container');
+
+  if (!MAP_ROTATION_ENABLED) {
+    // reset transforms
+    if (mapPane) mapPane.style.transform = 'none';
+    if (controls) controls.style.transform = 'none';
+  } else {
+    // apply current heading if available
+    if (typeof currentHeading === 'number') rotateMapTo(currentHeading);
+  }
+}

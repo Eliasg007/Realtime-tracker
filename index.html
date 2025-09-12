@@ -39,12 +39,11 @@
 <body>
 
 <h1>Real-Time Location Tracker</h1>
-<!-- Accessibility: distinct start/stop with ARIA -->
 <button id="startBtn" aria-label="Start real time tracking" onclick="startTracking()">Start Tracking</button>
 <button id="stopBtn" aria-label="Stop real time tracking" onclick="stopTracking()" disabled>Stop Tracking</button>
-<label>
+<label style="display:inline-flex;align-items:center;gap:8px;margin-left:8px;">
   <input id="rotateToggle" type="checkbox" checked onchange="toggleMapRotation(this.checked)" />
-  Rotate map to heading
+  <span>Rotate map to heading</span>
 </label>
 <div id="map"></div>
 

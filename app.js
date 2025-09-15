@@ -81,26 +81,20 @@ function initializeMap(center, zoom) {
         { "Satellite View": esriSat, "Street Map": osmStreets }
     ).addTo(state.map);
     
-    // Initialize path line
-    state.pathLine = L.polyline(state.pathCoords, { 
-        color: '#1a73e8', 
-        weight: 4, 
-        opacity: 0.9 
-    }).addTo(state.map);
+    // Path drawing is disabled to remove blue lines
+    // (previously: state.pathLine = L.polyline(...).addTo(state.map); )
+    state.pathLine = null;
 }
 
 // Load saved path from localStorage
 function loadSavedPath() {
     try {
-        const saved = localStorage.getItem('realtimetracker.path');
-        if (saved) {
-            const arr = JSON.parse(saved);
-            if (Array.isArray(arr) && arr.length) {
-                state.pathCoords = arr;
-            }
-        }
+        // Remove any previously saved noisy path so blue scribbles are gone
+        localStorage.removeItem('realtimetracker.path');
+        state.pathCoords = [];
+        // If you want to keep a backup instead of deleting, replace above with a rename/backup step.
     } catch (e) {
-        console.error('Failed to load saved path:', e);
+        console.error('Failed to clear saved path:', e);
     }
 }
 
@@ -204,13 +198,9 @@ async function updatePosition(position) {
     const accuracy = position.coords.accuracy || 20;
 
     // If the fix is not precise enough, show accuracy circle and wait for a better fix.
-    // This prevents adding noisy points to the path and avoids reverse-geocoding bad fixes.
     if (typeof accuracy === 'number' && accuracy > MIN_GEOCODE_ACCURACY) {
-        // show a short status so the user knows why updates are paused
         showStatus(`Waiting for accurate GPS fix (≤ ${MIN_GEOCODE_ACCURACY} m). Current: ${Math.round(accuracy)} m`, 'error');
-        // update accuracy circle so user sees current uncertainty
         updateAccuracyCircle(lat, lon, accuracy);
-        // do not proceed with marker/path/geocode updates until accuracy improves
         return;
     }
     
@@ -219,9 +209,9 @@ async function updatePosition(position) {
         state.currentHeading = smoothHeading(state.currentHeading, position.coords.heading);
     }
 
-    // Add to path and save
-    state.pathCoords.push([lat, lon]);
-    savePathToStorage();
+    // Do NOT add to pathCoords — path drawing disabled to remove blue lines
+    // state.pathCoords.push([lat, lon]);
+    // savePathToStorage();  <-- no-op now
 
     // Create marker if it doesn't exist
     if (!state.marker) {
@@ -233,8 +223,8 @@ async function updatePosition(position) {
         rotateMarkerTo(state.currentHeading);
     }
 
-    // Update path line
-    if (state.pathLine) state.pathLine.setLatLngs(state.pathCoords);
+    // Do NOT update a path line (already disabled)
+    // if (state.pathLine) state.pathLine.setLatLngs(state.pathCoords);
 
     // Update accuracy circle
     updateAccuracyCircle(lat, lon, accuracy);
@@ -245,10 +235,8 @@ async function updatePosition(position) {
     // Update address if needed (skip when accuracy is poor)
     await updateAddress(lat, lon, accuracy);
 
-    // Rotate map if enabled
-    if (state.mapRotationEnabled && typeof state.currentHeading === 'number') {
-        rotateMapTo(state.currentHeading);
-    }
+    // Map rotation removed — only marker rotates
+    // (no rotateMapTo calls)
 }
 
 // Create a rotating marker
@@ -453,13 +441,28 @@ function calculateDistance(lat1, lon1, lat2, lon2) {
     return R * c;
 }
 
-// Save path to localStorage
+// Save path to localStorage - disabled (no-op) to prevent recreating the scribbles
 function savePathToStorage() {
     try {
-        localStorage.setItem('realtimetracker.path', JSON.stringify(state.pathCoords));
+        // intentionally left blank to avoid persisting path points
+        // If you prefer to remove saved path at runtime, uncomment:
+        // localStorage.removeItem('realtimetracker.path');
     } catch (e) {
-        console.error('Failed to save path:', e);
+        console.error('Failed to save path (noop):', e);
     }
+}
+
+// Add helper to clear any previously drawn path (callable from console/UI)
+function clearSavedPath() {
+    try {
+        localStorage.removeItem('realtimetracker.path');
+    } catch (e) {
+        console.error('Failed to clear saved path:', e);
+    }
+    if (state.pathLine) {
+        state.pathLine.setLatLngs([]);
+    }
+    state.pathCoords = [];
 }
 
 // Handle geolocation errors

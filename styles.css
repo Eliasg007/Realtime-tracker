@@ -1,4 +1,3 @@
-/* General page */
 body {
   font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
   text-align: center;
@@ -10,7 +9,6 @@ body {
   transition: background 0.5s;
 }
 
-/* Title */
 h1 {
   margin: 32px 0 16px 0;
   font-size: 2.5rem;
@@ -21,7 +19,6 @@ h1 {
   animation: fadeInDown 1s;
 }
 
-/* Map container */
 #map {
   height: 70vh;
   width: 90%;
@@ -33,12 +30,12 @@ h1 {
   transition: transform 0.3s cubic-bezier(.4,2,.6,1), box-shadow 0.3s;
   background: #eaf3fb;
 }
+
 #map:hover {
   transform: scale(1.015) rotate(-0.3deg);
   box-shadow: 0 12px 36px rgba(26, 115, 232, 0.16), 0 4px 16px rgba(0,0,0,0.12);
 }
 
-/* Button */
 button {
   background: linear-gradient(90deg, #1a73e8 60%, #64b5f6 100%);
   color: white;
@@ -56,6 +53,7 @@ button {
   position: relative;
   overflow: hidden;
 }
+
 button::after {
   content: "";
   position: absolute;
@@ -67,20 +65,61 @@ button::after {
   transition: width 0.4s, height 0.4s;
   z-index: 0;
 }
+
 button:active::after {
   width: 200px;
   height: 200px;
 }
+
 button:hover {
   background: linear-gradient(90deg, #1669c1 60%, #42a5f5 100%);
   transform: translateY(-3px) scale(1.03);
   box-shadow: 0 8px 24px rgba(26, 115, 232, 0.22);
 }
+
 button:active {
   transform: translateY(0) scale(0.98);
 }
 
-/* Popup (address bubble) */
+button:disabled {
+  background: #cccccc;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+button:disabled:hover {
+  background: #cccccc;
+  transform: none;
+}
+
+label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: 8px;
+}
+
+.status-message {
+  margin: 10px auto;
+  padding: 8px 16px;
+  border-radius: 4px;
+  max-width: 500px;
+  display: none;
+}
+
+.error {
+  background-color: #ffebee;
+  color: #c62828;
+  display: block;
+}
+
+.success {
+  background-color: #e8f5e9;
+  color: #2e7d32;
+  display: block;
+}
+
 .leaflet-popup-content-wrapper {
   background: #ffffff;
   color: #1a73e8;
@@ -92,74 +131,106 @@ button:active {
   padding: 2px 0;
   animation: fadeInUp 0.7s;
 }
+
 .leaflet-popup-tip {
   background: #ffffff;
   border: 2px solid #90caf9;
 }
+
 .leaflet-popup-content {
   margin: 10px 16px;
   line-height: 1.5;
   letter-spacing: 0.2px;
 }
 
-/* Add a subtle floating animation to the marker */
-.leaflet-marker-icon {
-  animation: floatMarker 2.5s ease-in-out infinite;
+.rt-divicon { 
+  pointer-events: none; 
 }
 
-/* rotating marker - updated for larger icon, color and arrow tail */
-.rt-divicon { pointer-events: none; }
-.rt-marker { display:flex; align-items:center; justify-content:center; width:56px; height:56px; }
-.rt-marker svg { transition: transform 200ms ease-out; transform-origin: 50% 50%; filter: drop-shadow(0 6px 10px rgba(0,0,0,0.15)); }
-.rt-marker .arrow path { vector-effect: non-scaling-stroke; }
-.rt-marker .arrow-tail { stroke-linecap: round; stroke-linejoin: round; opacity: 0.95; }
+.rt-marker { 
+  display: flex; 
+  align-items: center; 
+  justify-content: center; 
+  width: 56px; 
+  height: 56px; 
+}
 
-/* ensure smooth map rotation and keep controls usable */
+.rt-marker svg { 
+  transition: transform 200ms ease-out; 
+  transform-origin: 50% 50%; 
+  filter: drop-shadow(0 6px 10px rgba(0,0,0,0.15)); 
+}
+
+.rt-marker .arrow path { 
+  vector-effect: non-scaling-stroke; 
+}
+
+.rt-marker .arrow-tail { 
+  stroke-linecap: round; 
+  stroke-linejoin: round; 
+  opacity: 0.95; 
+}
+
 .leaflet-map-pane {
   transform-origin: 50% 50%;
   transition: transform 280ms ease-out;
 }
+
 .leaflet-control-container {
   transform-origin: 50% 50%;
   transition: transform 280ms ease-out;
-  pointer-events: auto; /* keep controls clickable after counter-rotation */
-}
-
-/* make sure popups remain readable */
-.leaflet-popup-pane {
   pointer-events: auto;
 }
 
-/* Animations */
 @keyframes fadeInDown {
-  from { opacity: 0; transform: translateY(-40px);}
-  to { opacity: 1; transform: translateY(0);}
-}
-@keyframes fadeInUp {
-  from { opacity: 0; transform: translateY(40px);}
-  to { opacity: 1; transform: translateY(0);}
-}
-@keyframes floatMarker {
-  0%, 100% { transform: translateY(0);}
-  50% { transform: translateY(-8px);}
+  from { 
+    opacity: 0; 
+    transform: translateY(-40px);
+  }
+  to { 
+    opacity: 1; 
+    transform: translateY(0);
+  }
 }
 
-/* Mobile responsiveness */
+@keyframes fadeInUp {
+  from { 
+    opacity: 0; 
+    transform: translateY(40px);
+  }
+  to { 
+    opacity: 1; 
+    transform: translateY(0);
+  }
+}
+
+@keyframes floatMarker {
+  0%, 100% { 
+    transform: translateY(0);
+  }
+  50% { 
+    transform: translateY(-8px);
+  }
+}
+
 @media (max-width: 768px) {
   h1 {
     font-size: 1.4rem;
     margin: 18px 0 10px 0;
   }
+  
   button {
     width: 90%;
     padding: 16px;
     font-size: 17px;
   }
+  
   #map {
     width: 98%;
     height: 55vh;
     border-radius: 10px;
   }
+  
   .leaflet-popup-content {
     font-size: 13px;
     margin: 8px 8px;

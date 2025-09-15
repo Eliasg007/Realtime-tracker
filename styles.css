@@ -171,17 +171,6 @@ label {
   opacity: 0.95; 
 }
 
-.leaflet-map-pane {
-  transform-origin: 50% 50%;
-  transition: transform 280ms ease-out;
-}
-
-.leaflet-control-container {
-  transform-origin: 50% 50%;
-  transition: transform 280ms ease-out;
-  pointer-events: auto;
-}
-
 @keyframes fadeInDown {
   from { 
     opacity: 0; 

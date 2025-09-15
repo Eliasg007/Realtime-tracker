@@ -7,8 +7,7 @@ const state = {
     pathLine: null,
     pathCoords: [],
     currentHeading: null,
-    mapRotationEnabled: true,
-    currentMapRotation: 0,
+    // removed mapRotationEnabled/currentMapRotation to disable map rotation
     deviceOrientationActive: false,
     lastGeocodeTime: 0,
     lastGeocodePos: null,
@@ -21,7 +20,7 @@ const state = {
 let elements = {
     startBtn: null,
     stopBtn: null,
-    rotateToggle: null,
+    // removed rotateToggle lookup
     statusMessage: null,
     map: null
 };
@@ -36,7 +35,7 @@ function init() {
     elements = {
         startBtn: document.getElementById('startBtn'),
         stopBtn: document.getElementById('stopBtn'),
-        rotateToggle: document.getElementById('rotateToggle'),
+        // removed rotateToggle lookup
         statusMessage: document.getElementById('statusMessage'),
         map: document.getElementById('map')
     };
@@ -47,10 +46,8 @@ function init() {
     // Set up event listeners (guard in case elements missing)
     if (elements.startBtn) elements.startBtn.addEventListener('click', startTracking);
     if (elements.stopBtn) elements.stopBtn.addEventListener('click', stopTracking);
-    if (elements.rotateToggle) elements.rotateToggle.addEventListener('change', (e) => {
-        toggleMapRotation(e.target.checked);
-    });
-    
+    // removed rotateToggle listener
+
     // Initialize the map (without location)
     initializeMap([0, 0], 2); // Default to world view
 }
@@ -195,10 +192,8 @@ function handleDeviceOrientation(event) {
     if (event && typeof event.alpha === 'number') {
         // apply smoothing
         state.currentHeading = smoothHeading(state.currentHeading, event.alpha);
+        // only rotate the marker (no map rotation)
         rotateMarkerTo(state.currentHeading);
-        if (state.mapRotationEnabled) {
-            rotateMapTo(state.currentHeading);
-        }
     }
 }
 
@@ -292,27 +287,6 @@ function rotateMarkerTo(heading) {
     
     const headingNum = (typeof heading === 'number' && !isNaN(heading)) ? heading : 0;
     arrow.setAttribute('transform', `rotate(${headingNum})`);
-}
-
-// Rotate the map to a specific heading
-function rotateMapTo(heading) {
-    if (!state.map || typeof heading !== 'number' || isNaN(heading)) return;
-    
-    const container = state.map.getContainer();
-    const mapPane = container.querySelector('.leaflet-map-pane');
-    const controls = container.querySelector('.leaflet-control-container');
-
-    const rotation = -heading; // Rotate map pane opposite to heading
-    state.currentMapRotation = rotation;
-
-    if (mapPane) {
-        mapPane.style.transform = `rotate(${rotation}deg)`;
-    }
-    
-    // Keep controls upright by counter-rotating them
-    if (controls) {
-        controls.style.transform = `rotate(${heading}deg)`;
-    }
 }
 
 // Update the accuracy circle
@@ -485,26 +459,6 @@ function savePathToStorage() {
         localStorage.setItem('realtimetracker.path', JSON.stringify(state.pathCoords));
     } catch (e) {
         console.error('Failed to save path:', e);
-    }
-}
-
-// Toggle map rotation
-function toggleMapRotation(enabled) {
-    state.mapRotationEnabled = enabled;
-    
-    if (!state.map) return;
-    
-    const container = state.map.getContainer();
-    const mapPane = container.querySelector('.leaflet-map-pane');
-    const controls = container.querySelector('.leaflet-control-container');
-    
-    if (!state.mapRotationEnabled) {
-        // Reset transforms
-        if (mapPane) mapPane.style.transform = 'none';
-        if (controls) controls.style.transform = 'none';
-    } else if (typeof state.currentHeading === 'number') {
-        // Apply current heading
-        rotateMapTo(state.currentHeading);
     }
 }
 

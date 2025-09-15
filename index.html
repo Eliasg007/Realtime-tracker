@@ -4,176 +4,21 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Real-Time Location Tracker</title>
-  <!-- Use Leaflet for OpenStreetMap -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
-  <link rel="stylesheet" href="style.css" />
-  <style>
-    #map {
-      height: 500px;
-      width: 90%;
-      margin: auto;
-      border-radius: 10px;
-      box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-    }
-    button {
-      background: #4CAF50;
-      color: white;
-      padding: 10px 20px;
-      margin: 15px;
-      border: none;
-      border-radius: 5px;
-      font-size: 16px;
-      cursor: pointer;
-    }
-    button:hover {
-      background: #45a049;
-    }
-    label {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      margin-left: 8px;
-    }
-  </style>
+  <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
+  <h1>Real-Time Location Tracker</h1>
+  <button id="startBtn" aria-label="Start real time tracking">Start Tracking</button>
+  <button id="stopBtn" aria-label="Stop real time tracking" disabled>Stop Tracking</button>
+  <label>
+    <input id="rotateToggle" type="checkbox" checked />
+    <span>Rotate map to heading one</span>
+  </label>
+  <div id="statusMessage" class="status-message"></div>
+  <div id="map"></div>
 
-<h1>Real-Time Location Tracker</h1>
-<button id="startBtn" aria-label="Start real time tracking" onclick="startTracking()">Start Tracking</button>
-<button id="stopBtn" aria-label="Stop real time tracking" onclick="stopTracking()" disabled>Stop Tracking</button>
-<label style="display:inline-flex;align-items:center;gap:8px;margin-left:8px;">
-  <input id="rotateToggle" type="checkbox" checked onchange="toggleMapRotation(this.checked)" />
-  <span>Rotate map to heading</span>
-</label>
-<div id="map"></div>
-
-<!-- Use Leaflet for OpenStreetMap -->
-<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-<script>
-  let map, marker, watchId;
-  let MAP_ROTATION_ENABLED = true;
-  let currentHeading = 0;
-
-  function startTracking() {
-    if (navigator.geolocation) {
-      watchId = navigator.geolocation.watchPosition(updatePosition, showError, {
-        enableHighAccuracy: true
-      });
-      document.getElementById('startBtn').disabled = true;
-      document.getElementById('stopBtn').disabled = false;
-    } else {
-      alert("Geolocation is not supported by your browser.");
-    }
-  }
-
-  function stopTracking() {
-    if (watchId !== null) {
-      navigator.geolocation.clearWatch(watchId);
-      watchId = null;
-      document.getElementById('startBtn').disabled = false;
-      document.getElementById('stopBtn').disabled = true;
-    }
-  }
-
-  async function updatePosition(position) {
-    const lat = position.coords.latitude;
-    const lon = position.coords.longitude;
-    currentHeading = position.coords.heading || 0;
-
-    // Get address using OpenStreetMap Nominatim reverse geocoding
-    const address = await getAddress(lat, lon);
-
-    // Initialize the map only once
-    if (!map) {
-      map = L.map('map').setView([lat, lon], 15);
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '© OpenStreetMap contributors'
-      }).addTo(map);
-
-      marker = L.marker([lat, lon]).addTo(map)
-        .bindPopup(address)
-        .openPopup();
-    } else {
-      marker.setLatLng([lat, lon]);
-      marker.setPopupContent(address);
-      map.setView([lat, lon]);
-    }
-
-    if (MAP_ROTATION_ENABLED) {
-      rotateMapTo(currentHeading);
-    }
-  }
-
-  function rotateMapTo(heading) {
-    const angle = heading - currentHeading;
-    currentHeading = heading;
-    if (map) {
-      const container = map.getContainer();
-      const mapPane = container.querySelector('.leaflet-map-pane');
-      const controls = container.querySelector('.leaflet-control-container');
-      if (mapPane) mapPane.style.transform = `rotate(${-angle}deg)`;
-      if (controls) controls.style.transform = `rotate(${-angle}deg)`;
-    }
-  }
-
-  async function getAddress(lat, lon) {
-    try {
-      const response = await fetch(
-        `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lon}`
-      );
-      const data = await response.json();
-      // Compose address with house number and street if available
-      let address = "";
-      if (data.address) {
-        if (data.address.house_number) {
-          address += data.address.house_number + " ";
-        }
-        if (data.address.road) {
-          address += data.address.road;
-        }
-        if (address.trim() === "") {
-          address = data.display_name || "Address not found";
-        } else if (data.address.city || data.address.town || data.address.village) {
-          address += ", " + (data.address.city || data.address.town || data.address.village);
-        }
-      } else {
-        address = data.display_name || "Address not found";
-      }
-      return address;
-    } catch (e) {
-      return "Address lookup failed";
-    }
-  }
-
-  function showError(error) {
-    switch(error.code) {
-      case error.PERMISSION_DENIED:
-        alert("User denied the request for Geolocation.");
-        break;
-      case error.POSITION_UNAVAILABLE:
-        alert("Location information is unavailable.");
-        break;
-      case error.TIMEOUT:
-        alert("The request to get user location timed out.");
-        break;
-      case error.UNKNOWN_ERROR:
-        alert("An unknown error occurred.");
-        break;
-    }
-  }
-
-  function toggleMapRotation(enabled) {
-    MAP_ROTATION_ENABLED = !!enabled;
-    if (!MAP_ROTATION_ENABLED && map) {
-      const container = map.getContainer();
-      const mapPane = container.querySelector('.leaflet-map-pane');
-      const controls = container.querySelector('.leaflet-control-container');
-      if (mapPane) mapPane.style.transform = 'none';
-      if (controls) controls.style.transform = 'none';
-    } else if (MAP_ROTATION_ENABLED && typeof currentHeading === 'number') {
-      rotateMapTo(currentHeading);
-    }
-  }
-</script>
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  <script src="app.js"></script>
 </body>
 </html>
